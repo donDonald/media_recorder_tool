@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 
-"""
-Simply record the contents of the camera into a file using OpenCV
-via the new Pythonic cv2 interface. Press <esc> to quit.
-"""
-
 import os
 import sys
 import argparse
 import cv2
-import ffmpeg
+import numpy as np
+import ffmpeg # https://kkroening.github.io/ffmpeg-python/
 
 
 
@@ -261,74 +257,122 @@ class VideoRecorder:
                 OUTPUT_SIZE = (OUTPUT_WIDTH, OUTPUT_HEIGHT)
                 FPS = self._config.fps if (self._config.fps > 0) else deviceFps
 
-                # Setup video codec
-                #fourcc = -1
-                #print(fourcc)
-                OUTPUT_FORMAT = self._config.oformat
-                fourcc = cv2.VideoWriter_fourcc(*f'{OUTPUT_FORMAT}')
-                if self._config.verbosity > 0:
-                        print("==========================================================")
-                        print("output:")
-                        print(f"    output:{self._config.output}")
-                        print(f"    format:{OUTPUT_FORMAT}")
-                        print(f"    size:{OUTPUT_SIZE}")
-                        print(f"    fps:{FPS}")
-                        print(f"    fourcc:{fourcc}")
+                # FFmpeg output settings
+                process = (
+                        ffmpeg
+                        .input('pipe:', format='rawvideo', pix_fmt='bgr24', s=f'{OUTPUT_WIDTH}x{OUTPUT_HEIGHT}', r=FPS)
+                        .output(self._config.output, pix_fmt='yuv420p', vcodec='libx264')
+                        .overwrite_output()
+                        .run_async(pipe_stdin=True)
+                )
 
-                # Create output device
-                output = cv2.VideoWriter(self._config.output, fourcc, FPS, OUTPUT_SIZE)
-                if output.isOpened():
-                        if self._config.verbosity > 0:
-                                print(f'Output is opened')
-                else:
-                        eprint('Cant\'t open open output, supported codecs:')
-                        cv2.VideoWriter(self._config.output, -1, FPS, OUTPUT_SIZE)
-                        eprint('Cant\'t open open output, exiting')
-                        sys.exit(1)
-# https://docs.opencv.org/4.x/d4/d15/group__videoio__flags__base.html#ga41c5cfa7859ae542b71b1d33bbd4d2b4
-# https://docs.opencv.org/4.x/dc/dfc/group__videoio__flags__others.html
-# https://stackoverflow.com/questions/59023363/encoding-hevc-video-using-opencv-and-ffmpeg-backend
-# ffmpeg -encoders
+                try:
+                        while True:
+                                success, frame = cam.read()
+                                if not success:
+                                        eprint('Error reading camera, exiting')
+                                        sys.exit(1)
 
+                                # Draw record burron
+                                frame = self._recordButton.draw(frame)
 
-                while True:
-                        success, img = cam.read()
-                        if not success:
-                                eprint('Error reading camera, exiting')
-                                sys.exit(1)
+                                # Scale the image to desired size
+                                frame = cv2.resize(frame, OUTPUT_SIZE)
 
-                        #if mirror: 
-                        img = cv2.flip(img, 1)
+                                if self._recordButton._state:
+                                        # Write the frame to FFmpeg's stdin
+                                        process.stdin.write(frame.astype(np.uint8).tobytes())
 
-                        cv2.namedWindow('camera', cv2.WINDOW_NORMAL)
-                        cv2.resizeWindow('camera', WINDOW_WIDTH, WINDOW_HEIGHT)
+                                ## Optional: Display the frame
+                                cv2.imshow('Camera Feed', frame)
 
-                        img = self._recordButton.draw(img)
+                                key = cv2.waitKey(1)
+                                if key == 27: 
+                                        break  # esc to quit
+                                elif key == ord('r'):
+                                        self._recordButton.toggle()
 
-                        # assign mouse click to method in button instance
-                        #cv2.setMouseCallback("x", self._recordButton.handle_event)
-                        #cv2.setMouseCallback("x", Xhandle_event)
-                        #https://docs.opencv.org/4.x/db/d5b/tutorial_py_mouse_handling.html
-                        
-                        cv2.imshow('camera', img)
-
-                        # Scale the image to desired size
-                        img = cv2.resize(img, OUTPUT_SIZE)
-
-                        # Write the image tor the output
-                        if self._recordButton._state:
-                                output.write(img)
-                        
-                        key = cv2.waitKey(1)
-                        if key == 27: 
-                                break  # esc to quit
-                        elif key == ord('r'):
-                                self._recordButton.toggle()
+                except KeyboardInterrupt:
+                        print("Stopping capture.")
+                finally:
+                        # Release resources
+                        cam.release()
+                        cv2.destroyAllWindows()
+                        process.stdin.close()
+                        process.wait()
+                        print("Video saved as", self._config.output)
 
 
-                cam.release()
-                output.release()
-                cv2.destroyAllWindows()
+
+# ################################################### OpenCV VideoWriter ##############################################
+#                               # Setup video codec
+#                               #fourcc = -1
+#                               #print(fourcc)
+#                               OUTPUT_FORMAT = self._config.oformat
+#                               fourcc = cv2.VideoWriter_fourcc(*f'{OUTPUT_FORMAT}')
+#                               if self._config.verbosity > 0:
+#                                       print("==========================================================")
+#                                       print("output:")
+#                                       print(f"    output:{self._config.output}")
+#                                       print(f"    format:{OUTPUT_FORMAT}")
+#                                       print(f"    size:{OUTPUT_SIZE}")
+#                                       print(f"    fps:{FPS}")
+#                                       print(f"    fourcc:{fourcc}")
+
+#                               # Create output device
+#                               output = cv2.VideoWriter(self._config.output, fourcc, FPS, OUTPUT_SIZE)
+#                               if output.isOpened():
+#                                       if self._config.verbosity > 0:
+#                                               print(f'Output is opened')
+#                               else:
+#                                       eprint('Cant\'t open open output, supported codecs:')
+#                                       cv2.VideoWriter(self._config.output, -1, FPS, OUTPUT_SIZE)
+#                                       eprint('Cant\'t open open output, exiting')
+#                                       sys.exit(1)
+#               # https://docs.opencv.org/4.x/d4/d15/group__videoio__flags__base.html#ga41c5cfa7859ae542b71b1d33bbd4d2b4
+#               # https://docs.opencv.org/4.x/dc/dfc/group__videoio__flags__others.html
+#               # https://stackoverflow.com/questions/59023363/encoding-hevc-video-using-opencv-and-ffmpeg-backend
+#               # ffmpeg -encoders
+
+
+#                               while True:
+#                                       success, img = cam.read()
+#                                       if not success:
+#                                               eprint('Error reading camera, exiting')
+#                                               sys.exit(1)
+
+#                                       #if mirror: 
+#                                       img = cv2.flip(img, 1)
+
+#                                       cv2.namedWindow('camera', cv2.WINDOW_NORMAL)
+#                                       cv2.resizeWindow('camera', WINDOW_WIDTH, WINDOW_HEIGHT)
+
+#                                       img = self._recordButton.draw(img)
+
+#                                       # assign mouse click to method in button instance
+#                                       #cv2.setMouseCallback("x", self._recordButton.handle_event)
+#                                       #cv2.setMouseCallback("x", Xhandle_event)
+#                                       #https://docs.opencv.org/4.x/db/d5b/tutorial_py_mouse_handling.html
+#                                       
+#                                       cv2.imshow('camera', img)
+
+#                                       # Scale the image to desired size
+#                                       img = cv2.resize(img, OUTPUT_SIZE)
+
+#                                       # Write the image tor the output
+#                                       if self._recordButton._state:
+#                                               output.write(img)
+#                                       
+#                                       key = cv2.waitKey(1)
+#                                       if key == 27: 
+#                                               break  # esc to quit
+#                                       elif key == ord('r'):
+#                                               self._recordButton.toggle()
+
+
+#                               cam.release()
+#                               output.release()
+#                               cv2.destroyAllWindows()
 
 
 
@@ -337,7 +381,7 @@ def main():
         # Create arguments parser
         example = "./VideoRecorder.py out.avi --device=0 --wwidth=1024 --wheight=800"
         parser = argparse.ArgumentParser(prog='VideoRecorder',
-                                         description='Record a video from camera into a file',
+                                         description='Record audio from a camera into a file',
                                          epilog=example)
 
         parser.add_argument("-v", "--verbosity", type=int, choices=[0, 1, 2], default=0, help="set verbosity level")
