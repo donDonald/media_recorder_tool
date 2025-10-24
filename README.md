@@ -37,3 +37,26 @@ pip install opencv-python
 
 # Referenses
 * https://gist.github.com/tedmiston/6060034
+
+
+
+
+# pyaudio
+
+
+
+
+## Option A(install the pre-compiled PyAudio package directly from Ubuntu's repositories)
+```
+sudo apt install python3-pyaudio
+```
+
+
+
+
+## Option B(???)
+```
+sudo apt update
+sudo apt install python3-dev portaudio19-dev
+pip3 install pyaudio
+```
