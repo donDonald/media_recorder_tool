@@ -1,10 +1,5 @@
 #!/usr/bin/env python
 
-"""
-Simply display the contents of a camera with optional mirroring using OpenCV 
-via the new Pythonic cv2 interface. Press <esc> to quit.
-"""
-
 import argparse
 import cv2
 
@@ -17,38 +12,34 @@ def eprint(*_args, **_kwargs):
 
 
 
-class Config:
-
-
-        def __init__(self, args):
-                # Verbosity level
-                self._verbosity = args.verbosity
-
-                # Input capture device
-                self._device = args.device
-
-
-        def __str__(self):
-                return f"""verbosity:{self.verbosity}
-                           device:{self.device}"""
-
-
-        #@verbosity.getter
-        @property
-        def verbosity(self):
-                return self._verbosity
-
-
-        #@model.getter
-        @property
-        def device(self):
-                return self._device
-
-
-
-
-
 class Camera:
+
+
+
+
+        class Config:
+
+
+                def __init__(self, args):
+                        self._verbosity = args.verbosity
+                        self._device = args.device
+
+
+                def __str__(self):
+                        return f"""verbosity:{self.verbosity}
+                                   device:{self.device}"""
+
+
+                #@verbosity.getter
+                @property
+                def verbosity(self):
+                        return self._verbosity
+
+
+                #@model.getter
+                @property
+                def device(self):
+                        return self._device
 
 
         def __init__(self, config):
@@ -56,22 +47,22 @@ class Camera:
                 pass
 
 
-        def list():
-                """
-                Attempts to open camera devices with increasing indices to identify available cameras.
-                """     
+        def list(config):
+                result = []
                 # Checks the first 10 indexes.
                 index = 0
-                arr = []
                 i = 10
                 while i > 0:
                         cap = cv2.VideoCapture(index)
                         if cap.read()[0]:
-                                arr.append(index)
+                                result.append((index, f"camera-{index}"))
+                                if config.verbosity > 1:
+                                        print(f"ID:{index}")
+                                        print(f"Name:camera-{index}")
                                 cap.release()
                         index += 1
                         i -= 1
-                return arr
+                return result
 
 
         def show(self, mirror=False, width=600, height=600):
@@ -87,9 +78,9 @@ class Camera:
                         ret_val, img = cam.read()
                         if mirror: 
                                 img = cv2.flip(img, 1)
-                        cv2.imshow('camera', img)
-                        cv2.namedWindow('camera', cv2.WINDOW_NORMAL)
-                        cv2.resizeWindow('camera', width, height)
+                        cv2.imshow(f"camera-{self._config.device}", img)
+                        cv2.namedWindow(f"camera-{self._config.device}", cv2.WINDOW_NORMAL)
+                        cv2.resizeWindow(f"camera-{self._config.device}", width, height)
                         if cv2.waitKey(1) == 27: 
                                 break  # esc to quit
                 cv2.destroyAllWindows()
@@ -104,29 +95,25 @@ def main():
                                          description='Display a video from a camera',
                                          epilog=example)
 
-        parser.add_argument("-v", "--verbosity", type=int, choices=[0, 1, 2], default=0, help="set verbosity level")
-        parser.add_argument("--device", type=int, default=0, help="set video capture device(default: 0)")
+        parser.add_argument("--verbosity", "-v", type=int, choices=[0, 1, 2], default=0, help="set verbosity level")
+        parser.add_argument("--device", "-d", type=int, default=0, help="set video capture device(default: 0)")
         args = parser.parse_args()
 
         # Create configuration
-        config = Config(args)
-        if config.verbosity > 0:
-                print("==========================================================")
-                print("config:")
-                print(config)
+        config = Camera.Config(args)
 
+        # List available camera devices
+        print("==========================================================")
+        devices = Camera.list(config)
+        print("Available camera devices:")
+        if devices:
+                for device in devices:
+                        print(f"- device ID: {device[0]}, name:{device[1]}")
+        else:
+                print("No camera devices found.")
+                sys.exit(0)
 
-        if config.verbosity > 0:
-                print("==========================================================")
-                print("available devices:")
-                devices = Camera.list()
-                if devices:
-                        print("Available camera device indices:")
-                        for index in devices:
-                                print(f"- Device index: {index}")
-                else:
-                        print("No camera devices found.")
-
+        # Create camera
         camera = Camera(config)
         camera.show(mirror=True)
 
