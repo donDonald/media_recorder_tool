@@ -6,6 +6,7 @@ import argparse
 import cv2
 import numpy as np
 import ffmpeg # https://kkroening.github.io/ffmpeg-python/
+import Button
 
 
 
@@ -16,208 +17,124 @@ def eprint(*_args, **_kwargs):
 
 
 
-class Config:
-
-
-        def __init__(self, args):
-                # Verbosity level
-                self._verbosity = args.verbosity
-
-                # Input capture device
-                self._device = args.device
-
-                # Output file
-                self._output = args.output
-
-                # Output file format(video codec)
-                self._oformat = args.oformat
-
-                # Width of the output
-                self._owidth = args.owidth
-
-                # Height of the output
-                self._oheight = args.oheight
-
-                # FPS
-                self._fps = args.fps
-
-                # Width of the window
-                self._wwidth = args.wwidth
-
-                # Height of the window
-                self._wheight = args.wheight
-
-
-        def __str__(self):
-                return f"""verbosity:{self.verbosity}
-                           device:{self.device}
-                           output:{self.output}
-                           oformat:{self.oformat}
-                           owidht:{self.owidth}
-                           oheight:{self.oheight}
-                           fps:{self.fps}
-                           wwidht:{self.wwidth}
-                           wheight:{self.wheight}"""
-
-
-        #@verbosity.getter
-        @property
-        def verbosity(self):
-                return self._verbosity
-
-
-        #@model.getter
-        @property
-        def device(self):
-                return self._device
-
-
-        #@model.getter
-        @property
-        def output(self):
-                return self._output
-
-
-        #@model.getter
-        @property
-        def oformat(self):
-                return self._oformat
-
-
-        #@model.getter
-        @property
-        def owidth(self):
-                return self._owidth
-
-
-        #@model.getter
-        @property
-        def oheight(self):
-                return self._oheight
-
-
-        #@model.getter
-        @property
-        def fps(self):
-                return self._fps
-
-
-        #@model.getter
-        @property
-        def wwidth(self):
-                return self._wwidth
-
-
-        #@model.getter
-        @property
-        def wheight(self):
-                return self._wheight
-
-
-
-
 class VideoRecorder:
 
 
-        class Button:
 
 
-                def __init__(self, x:int, y:int, off_on):
-                        self._state = False
-                        self._x = x
-                        self._y = y
-
-                        self._off, self._on = off_on
-                        image_on = self._on[0]
-                        self._image_on = cv2.imread(image_on)
-                        height_on, width_on, channels_on = self._image_on.shape
-                        image_off = self._off[0]
-                        self._image_off = cv2.imread(image_off)
-                        height_off, width_off, channels_off = self._image_off.shape
-
-                        width = max([width_on, width_off])
-                        height = max([height_on, height_off])
-
-                        self._w = width
-                        self._h = height
-
-                        self._left = x
-                        self._top  = y
-                        self._right  = x + width - 1 
-                        self._bottom = y + height - 1
-                        self._text = self._off[1]
-                        pass
+        class Config:
 
 
-                def draw(self, img):
-                        # Draw image
-                        btn = self._image_on if self._state else self._image_off
-                        x_offset = self._x;
-                        y_offset = self._y;
-                        img[y_offset:y_offset+btn.shape[0], x_offset:x_offset+btn.shape[1]] = btn
-
-                        # Draw text
-                        if len(self._text):
-                                fontFace = cv2.FONT_HERSHEY_PLAIN
-                                fontScale = 1.0
-                                thickness = 2
-
-                                ((fw,fh), baseline) = cv2.getTextSize(
-                                        "", fontFace=fontFace, fontScale=fontScale, thickness=thickness) # empty string is good enough
-
-                                height_in_pixels = btn.shape[0]
-                                fontScale = height_in_pixels/fh
-
-                                org = (x_offset + btn.shape[1] + int(50*btn.shape[1]/100), self._y+height_in_pixels)
-                                cv2.putText(
-                                        img=img, text=self._text, org=org,
-                                        fontFace=fontFace, fontScale=fontScale, color=(0, 0, 0), thickness=thickness)
-
-                        return img
+                def __init__(self, args):
+                        self._verbosity = args.verbosity
+                        self._device = args.device
+                        self._oformat = args.oformat
+                        self._owidth = args.owidth
+                        self._oheight = args.oheight
+                        self._fps = args.fps
+                        self._wwidth = args.wwidth
+                        self._wheight = args.wheight
+                        self._command = args.command
+                        self._output = args.output[0] if args.output else ""
 
 
-                def toggle(self):
-                        self._state = not self._state
-                        self._color = self._on[0] if self._state else self._off[0]
-                        self._text  = self._on[1] if self._state else self._off[1]
-                        pass
+                def __str__(self):
+                        return f"""verbosity:{self.verbosity}
+                                   device:{self.device}
+                                   oformat:{self.oformat}
+                                   owidht:{self.owidth}
+                                   oheight:{self.oheight}
+                                   fps:{self.fps}
+                                   wwidht:{self.wwidth}
+                                   wheight:{self.wheight}
+                                   command:{self.command}
+                                   output:{self.output}"""
 
 
-                def handle_event(self, event, x, y, flags, param):
-                        self._hover = (self._left <= x <= self._right and self._top <= y <= self._bottom)
+                #@verbosity.getter
+                @property
+                def verbosity(self):
+                        return self._verbosity
 
-                        if self._hover and flags == 1:
-                                pass
 
-                       #self.clicked = False
-                       #print(event, x, y, flags, param)
-                       #
-                       #if self.command:
-                       #    self.command()
+                #@model.getter
+                @property
+                def device(self):
+                        return self._device
+
+
+                #@model.getter
+                @property
+                def oformat(self):
+                        return self._oformat
+
+
+                #@model.getter
+                @property
+                def owidth(self):
+                        return self._owidth
+
+
+                #@model.getter
+                @property
+                def oheight(self):
+                        return self._oheight
+
+
+                #@model.getter
+                @property
+                def fps(self):
+                        return self._fps
+
+
+                #@model.getter
+                @property
+                def wwidth(self):
+                        return self._wwidth
+
+
+                #@model.getter
+                @property
+                def wheight(self):
+                        return self._wheight
+
+
+                #@model.getter
+                @property
+                def command(self):
+                        return self._command
+
+
+                #@model.getter
+                @property
+                def output(self):
+                        return self._output
+
+
 
 
         def __init__(self, config):
                 self._config = config
-                self._recordButton = VideoRecorder.Button(10, 10, (("assets/off.png", ""), ("assets/on.png", "Live")))
+                self._recordButton = Button.Button(10, 10, (("assets/off.png", ""), ("assets/on.png", "Live")))
                 pass
 
 
-        def list():
-                """
-                Attempts to open camera devices with increasing indices to identify available cameras.
-                """
+        def list(config):
+                result = []
                 # Checks the first 10 indexes.
                 index = 0
-                arr = []
                 i = 10
                 while i > 0:
                         cap = cv2.VideoCapture(index)
                         if cap.read()[0]:
-                                arr.append(index)
+                                result.append((index, f"camera-{index}"))
+                                if config.verbosity > 1:
+                                        print(f"ID:{index}")
+                                        print(f"Name:camera-{index}")
                                 cap.release()
                         index += 1
                         i -= 1
-                return arr
+                return result
 
 
         def show(self, mirror=False, width=600, height=600):
@@ -266,6 +183,9 @@ class VideoRecorder:
                         .run_async(pipe_stdin=True)
                 )
 
+                # Set initial state
+                self._recordButton.set(True if self._config.command == "record" else False)
+
                 try:
                         while True:
                                 success, frame = cam.read()
@@ -283,8 +203,8 @@ class VideoRecorder:
                                         # Write the frame to FFmpeg's stdin
                                         process.stdin.write(frame.astype(np.uint8).tobytes())
 
-                                ## Optional: Display the frame
-                                cv2.imshow('Camera Feed', frame)
+                                # Display the frame
+                                cv2.imshow(f"Camera-{self._config.device}", frame)
 
                                 key = cv2.waitKey(1)
                                 if key == 27: 
@@ -384,36 +304,39 @@ def main():
                                          description='Record audio from a camera into a file',
                                          epilog=example)
 
-        parser.add_argument("-v", "--verbosity", type=int, choices=[0, 1, 2], default=0, help="set verbosity level")
-        parser.add_argument("--device", type=int, default=0, help="set video capture device(default: 0)")
-        parser.add_argument('output', type=str, help='Path to output file')
-        parser.add_argument("--oformat", choices=["MJPG", "FMP4", "mp4v", "XVID", "DIVX", "avc1", "hvc1", "vp09", "hev1"], default="avc1", help="outout fomat or vidoecodec(default: avc1)")
+        parser.add_argument("--verbosity", "-v", type=int, choices=[0, 1, 2], default=0, help="set verbosity level")
+        parser.add_argument("--device", "-d", type=int, default=0, help="set video capture device(default: 0)")
+        parser.add_argument("--oformat", choices=["MJPG", "FMP4", "mp4v", "XVID", "DIVX", "avc1", "hvc1", "vp09", "hev1"], default="avc1", help="outout fomat or vidoecodec(default: hev11)")
         parser.add_argument("--owidth", type=int, default=-1, help="set output width(default: device width)")
         parser.add_argument("--oheight", type=int, default=-1, help="set output height(default: device height)")
-        parser.add_argument("-f", "--fps", type=int, default=15, help="set frames per second(default 15)")
+        parser.add_argument("--fps", "-f", type=int, default=15, help="set frames per second(default 15)")
         parser.add_argument("--wwidth", type=int, default=-1, help="set window width(default: device width)")
         parser.add_argument("--wheight", type=int, default=-1, help="set window height(default: device height)")
-        args = parser.parse_args()
-
+        parser.add_argument("--command", choices=["pause", "record"], default="pause", help="command to recorder(default: pause)")
+       #parser.add_argument('output', type=str, help='Path to output file')
+       #args = parser.parse_args()
+        parser.add_argument("output", nargs='*', default=argparse.SUPPRESS)
+        args = parser.parse_args(namespace=argparse.Namespace(output=None))
 
         # Create configuration
-        config = Config(args)
+        config = VideoRecorder.Config(args)
+
+        # List available camera devices
+        if not config.output:
+                print("==========================================================")
+                devices = VideoRecorder.list(config)
+                print("Available camera devices:")
+                if devices:
+                        for device in devices:
+                                print(f"- device ID: {device[0]}, name:{device[1]}")
+                else:
+                        print("No camera devices found.")
+                sys.exit(0)
+
         if config.verbosity > 0:
                 print("==========================================================")
                 print("config:")
                 print(config)
-
-        # List available camera devices
-        if config.verbosity > 0:
-                print("==========================================================")
-                print("available devices:")
-                devices = VideoRecorder.list()
-                if devices:
-                        print("Available camera device indices:")
-                        for index in devices:
-                                print(f"- Device index: {index}")
-                else:
-                        print("No camera devices found.")
 
         # Create recorder
         recorder = VideoRecorder(config)
