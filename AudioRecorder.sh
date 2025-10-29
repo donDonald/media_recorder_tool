@@ -8,4 +8,10 @@ fi
 
 DEVICE=${2:-"0"}
 
-./AudioRecorder.py -v0 --device=$DEVICE $OUTPUT.mp3
+if [[ -z "${RECORDER_COMMAND}" ]]; then
+    COMMAND=${3:-"pause"}
+else
+    COMMAND=${RECORDER_COMMAND}
+fi
+
+./AudioRecorder.py -v0 --device=$DEVICE --command=$COMMAND $OUTPUT.mp3

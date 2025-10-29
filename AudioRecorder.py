@@ -9,6 +9,7 @@ import numpy as np
 import pyaudio
 import subprocess as sp
 import time
+import Button
 
 
 
@@ -19,163 +20,75 @@ def eprint(*_args, **_kwargs):
 
 
 
-class Config:
-
-
-        def __init__(self, args):
-                self._verbosity = args.verbosity
-                self._device = args.device
-                self._channels = args.channels
-                self._rate = args.rate
-                self._command = args.command
-                self._output = args.output[0] if args.output else ""
-
-
-        def __str__(self):
-                return f"""verbosity:{self.verbosity}
-                           device:{self.device}
-                           channels:{self.channels}
-                           rate:{self.rate}
-                           command:{self.command}
-                           output:{self.output}"""
-
-
-        #@verbosity.getter
-        @property
-        def verbosity(self):
-                return self._verbosity
-
-
-        #@model.getter
-        @property
-        def device(self):
-                return self._device
-
-
-        #@model.getter
-        @property
-        def channels(self):
-                return self._channels
-
-
-        #@model.getter
-        @property
-        def rate(self):
-                return self._rate
-
-
-        #@model.getter
-        @property
-        def output(self):
-                return self._output
-
-
-        #@model.getter
-        @property
-        def command(self):
-                return self._command
-
-
-
-
 class AudioRecorder:
 
 
-        class Button:
 
 
-                def __init__(self, x:int, y:int, off_on):
-                        self._state = False
-                        self._x = x
-                        self._y = y
+        class Config:
 
-                        self._off, self._on = off_on
-                        image_on = self._on[0]
-                        self._image_on = cv2.imread(image_on)
-                        height_on, width_on, channels_on = self._image_on.shape
-                        image_off = self._off[0]
-                        self._image_off = cv2.imread(image_off)
-                        height_off, width_off, channels_off = self._image_off.shape
 
-                        width = max([width_on, width_off])
-                        height = max([height_on, height_off])
+                def __init__(self, args):
+                        self._verbosity = args.verbosity
+                        self._device = args.device
+                        self._channels = args.channels
+                        self._rate = args.rate
+                        self._command = args.command
+                        self._output = args.output[0] if args.output else ""
 
-                        self._w = width
-                        self._h = height
 
-                        self._left = x
-                        self._top  = y
-                        self._right  = x + width - 1 
-                        self._bottom = y + height - 1
-                        self._text = self._off[1]
-                        pass
+                def __str__(self):
+                        return f"""verbosity:{self.verbosity}
+                                   device:{self.device}
+                                   channels:{self.channels}
+                                   rate:{self.rate}
+                                   command:{self.command}
+                                   output:{self.output}"""
+
+
+                #@verbosity.getter
+                @property
+                def verbosity(self):
+                        return self._verbosity
 
 
                 #@model.getter
                 @property
-                def state(self):
-                        return self._state
+                def device(self):
+                        return self._device
 
 
-                def set(self, state:bool):
-                        self._state = state
-                        self._color = self._on[0] if self._state else self._off[0]
-                        self._text  = self._on[1] if self._state else self._off[1]
-                        pass
+                #@model.getter
+                @property
+                def channels(self):
+                        return self._channels
 
 
-                def toggle(self):
-                        self._state = not self._state
-                        self._color = self._on[0] if self._state else self._off[0]
-                        self._text  = self._on[1] if self._state else self._off[1]
-                        pass
+                #@model.getter
+                @property
+                def rate(self):
+                        return self._rate
 
 
-                def draw(self, img):
-                        # Draw image
-                        btn = self._image_on if self._state else self._image_off
-                        x_offset = self._x;
-                        y_offset = self._y;
-                        img[y_offset:y_offset+btn.shape[0], x_offset:x_offset+btn.shape[1]] = btn
-
-                        # Draw text
-                        if len(self._text):
-                                fontFace = cv2.FONT_HERSHEY_PLAIN
-                                fontScale = 1.0
-                                thickness = 2
-
-                                ((fw,fh), baseline) = cv2.getTextSize(
-                                        "", fontFace=fontFace, fontScale=fontScale, thickness=thickness) # empty string is good enough
-
-                                height_in_pixels = btn.shape[0]
-                                fontScale = height_in_pixels/fh
-
-                                org = (x_offset + btn.shape[1] + int(50*btn.shape[1]/100), self._y+height_in_pixels)
-                                cv2.putText(
-                                        img=img, text=self._text, org=org,
-                                        fontFace=fontFace, fontScale=fontScale, color=(0, 0, 0), thickness=thickness)
-
-                        return img
+                #@model.getter
+                @property
+                def output(self):
+                        return self._output
 
 
-                def handle_event(self, event, x, y, flags, param):
-                        self._hover = (self._left <= x <= self._right and self._top <= y <= self._bottom)
+                #@model.getter
+                @property
+                def command(self):
+                        return self._command
 
-                        if self._hover and flags == 1:
-                                pass
 
-                       #self.clicked = False
-                       #print(event, x, y, flags, param)
-                       #
-                       #if self.command:
-                       #    self.command()
 
 
         def __init__(self, config):
                 self._config = config
                 self._width = 400;
                 self._height = 100;
-                self._recordButton = AudioRecorder.Button(10, 10, (("assets/off.png", ""), ("assets/on.png", "")))
+                self._recordButton = Button.Button(10, 10, (("assets/off.png", ""), ("assets/on.png", "")))
                 pass
 
 
@@ -303,8 +216,8 @@ def main():
                                          description='Record audio from a microphone into a file',
                                          epilog=example)
 
-        parser.add_argument("-v", "--verbosity", type=int, choices=[0, 1, 2], default=0, help="set verbosity level")
-        parser.add_argument("--device", "-d" , type=int, default=0, help="set audio capture device(default: 0)")
+        parser.add_argument("--verbosity", "-v", type=int, choices=[0, 1, 2], default=0, help="set verbosity level")
+        parser.add_argument("--device", "-d", type=int, default=0, help="set audio capture device(default: 0)")
         parser.add_argument("--channels", "-c", type=int, default=1, help="set audio channels(default 1)")
         parser.add_argument("--rate", "-r", type=int, default=44100, help="set bit-rate(default 44100)")
         parser.add_argument("--command", choices=["pause", "record"], default="pause", help="command to recorder(default: pause)")
@@ -314,7 +227,7 @@ def main():
         args = parser.parse_args(namespace=argparse.Namespace(output=None))
 
         # Create configuration
-        config = Config(args)
+        config = AudioRecorder.Config(args)
 
         # List available microphone devices
         if not config.output:
