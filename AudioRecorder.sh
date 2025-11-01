@@ -1,9 +1,9 @@
 #!/bin/bash
 
 OUTPUT=$1
-if [ -z $OUTPUT]; then
+if [ -z $OUTPUT ]; then
     echo "Where is output name dude? Exiting" 1>&2
-    exit
+    exit 1
 fi
 
 DEVICE=${2:-"0"}

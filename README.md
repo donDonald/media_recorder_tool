@@ -1,4 +1,5 @@
 # Intro
+Set of tools to capture media streams and pack those into container, mp4 or mkv.
 
 
 
@@ -34,9 +35,39 @@ pip install opencv-python
 
 
 
+# Tools
+
+## VideoRecorder.py, VideoRecorder.sh
+## AudioRecorder.py, AudioRecorder.sh
+## Container.sh
+
+
+
+
 
 # Referenses
 * https://gist.github.com/tedmiston/6060034
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -59,4 +90,14 @@ sudo apt install python3-pyaudio
 sudo apt update
 sudo apt install python3-dev portaudio19-dev
 pip3 install pyaudio
+```
+
+
+
+
+# Extra tools
+
+## mkvtoolnix-gui
+```
+sudo apt install mkvtoolnix-gui
 ```

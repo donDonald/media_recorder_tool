@@ -328,7 +328,7 @@ def main():
                 print("Available camera devices:")
                 if devices:
                         for device in devices:
-                                print(f"- device ID: {device[0]}, name:{device[1]}")
+                                print(f"- device ID:{device[0]}, name:{device[1]}")
                 else:
                         print("No camera devices found.")
                 sys.exit(0)
