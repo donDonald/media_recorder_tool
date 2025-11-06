@@ -6,7 +6,7 @@ import argparse
 import cv2
 import numpy as np
 import ffmpeg # https://kkroening.github.io/ffmpeg-python/
-import Button
+import common.Button as Button
 
 
 
@@ -115,7 +115,7 @@ class VideoRecorder:
 
         def __init__(self, config):
                 self._config = config
-                self._recordButton = Button.Button(10, 10, (("assets/off.png", ""), ("assets/on.png", "Live")))
+                self._recordButton = Button.Button(10, 10, (("common/assets/off.png", ""), ("common/assets/on.png", "Live")))
                 pass
 
 

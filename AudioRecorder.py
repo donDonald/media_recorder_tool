@@ -9,7 +9,7 @@ import numpy as np
 import pyaudio
 import subprocess as sp
 import time
-import Button
+import common.Button as Button
 
 
 
@@ -88,7 +88,7 @@ class AudioRecorder:
                 self._config = config
                 self._width = 400;
                 self._height = 100;
-                self._recordButton = Button.Button(10, 10, (("assets/off.png", ""), ("assets/on.png", "")))
+                self._recordButton = Button.Button(10, 10, (("common/assets/off.png", ""), ("common/assets/on.png", "")))
                 pass
 
 
