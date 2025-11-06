@@ -173,7 +173,6 @@ case "$CMD" in
                 STREAM_MAPS+=" -map $STREAM_INDEX:v"
                 echo "STREAM_INPUTS:$STREAM_INPUTS"
                 echo "STREAM_MAPS:$STREAM_MAPS"
-
             fi
             ((++STREAM_INDEX))
         done
@@ -186,6 +185,12 @@ case "$CMD" in
         # Convert the string to an array
         IFS=' ' read -r -a my_params_array <<< "$FF_PARAMS"
         ffmpeg "${my_params_array[@]}"
+        if [ $? -eq 0 ]; then
+            echo "Command succeeded"
+            echo "$CONTAINER container saved as $CONTAINER_NAME"
+        else
+            echo "Command failed with exit status: $?"
+        fi
         exit $?
         ;;
     *)

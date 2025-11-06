@@ -2,7 +2,8 @@
 
 OUTPUT=$1
 if [ -z $OUTPUT ]; then
-    echo "Where is output name dude? Exiting" 1>&2
+    # List avaliable devices if no params ara given
+    ./AudioRecorder.py
     exit 1
 fi
 
