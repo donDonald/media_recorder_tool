@@ -35,6 +35,9 @@ class VideoRecorder:
                         self._wwidth = args.wwidth
                         self._wheight = args.wheight
                         self._command = args.command
+                        self._hflip = args.hflip
+                        self._vflip = args.vflip
+                        self._name = args.name
                         self._output = args.output[0] if args.output else ""
 
 
@@ -48,6 +51,9 @@ class VideoRecorder:
                                    wwidht:{self.wwidth}
                                    wheight:{self.wheight}
                                    command:{self.command}
+                                   hflip:{self.hflip}
+                                   vflip:{self.vflip}
+                                   name:{self.name}
                                    output:{self.output}"""
 
 
@@ -107,6 +113,22 @@ class VideoRecorder:
 
                 #@model.getter
                 @property
+                def hflip(self):
+                        return self._hflip
+
+                #@model.getter
+                @property
+                def vflip(self):
+                        return self._vflip
+
+                #@model.getter
+                @property
+                def name(self):
+                        return self._name
+
+
+                #@model.getter
+                @property
                 def output(self):
                         return self._output
 
@@ -137,14 +159,17 @@ class VideoRecorder:
                 return result
 
 
-        def show(self, mirror=False, width=600, height=600):
+        def show(self):
+                if self._config.verbosity > 0:
+                        print(f"[VideoRecorder] About to connect to device:{self._config.device}, window name:{self._config.name}")
                 cam = cv2.VideoCapture(self._config.device)
-                if cam.isOpened():
-                        if self._config.verbosity > 0:
-                                print(f'Device "{self._config.device}" is opened')
-                else:
-                        eprint(f'Cant\'t open device "{self._config.device}", exiting')
+                if not cam.isOpened():
+                        eprint(f'[VideoRecorder] Device:{self._config.device} does not exist, no camera is found, shall be at least!')
+                        eprint('exiting')
                         sys.exit(1)
+
+                if self._config.verbosity > 0:
+                        print(f"[VideoRecorder] Connected to device:{self._config.device} succesfully")
 
                 # Collect device capabilities
                 deviceWidth = cam.get(cv2.CAP_PROP_FRAME_WIDTH)
@@ -174,6 +199,13 @@ class VideoRecorder:
                 OUTPUT_SIZE = (OUTPUT_WIDTH, OUTPUT_HEIGHT)
                 FPS = self._config.fps if (self._config.fps > 0) else deviceFps
 
+                if self._config.verbosity > 0:
+                        print("==========================================================")
+                        if self._config.hflip:
+                                print(f"[VideoRecorder] Flip image horizonally")
+                        if self._config.vflip:
+                                print(f"[VideoRecorder] Flip image vertically")
+
                 # FFmpeg output settings
                 process = (
                         ffmpeg
@@ -187,11 +219,20 @@ class VideoRecorder:
                 self._recordButton.set(True if self._config.command == "record" else False)
 
                 try:
-                        while True:
+                        while cam.isOpened():
                                 success, frame = cam.read()
                                 if not success:
-                                        eprint('Error reading camera, exiting')
+                                        eprint(f'[VideoRecorder] Device:{self._config.device} - failed reading')
+                                        eprint('exiting')
                                         sys.exit(1)
+
+                                # Flip horizontally
+                                if self._config.hflip:
+                                        img = cv2.flip(img, 1)
+
+                                # Flip vertically
+                                if self._config.vflip:
+                                        img = cv2.flip(img, 0)
 
                                 # Draw record burron
                                 frame = self._recordButton.draw(frame)
@@ -204,7 +245,7 @@ class VideoRecorder:
                                         process.stdin.write(frame.astype(np.uint8).tobytes())
 
                                 # Display the frame
-                                cv2.imshow(f"Camera-{self._config.device}", frame)
+                                cv2.imshow(f"{self._config.name}-{self._config.device}", frame)
 
                                 key = cv2.waitKey(1)
                                 if key == 27: 
@@ -221,78 +262,6 @@ class VideoRecorder:
                         process.stdin.close()
                         process.wait()
                         print("Video saved as", self._config.output)
-
-
-
-# ################################################### OpenCV VideoWriter ##############################################
-#                               # Setup video codec
-#                               #fourcc = -1
-#                               #print(fourcc)
-#                               OUTPUT_FORMAT = self._config.oformat
-#                               fourcc = cv2.VideoWriter_fourcc(*f'{OUTPUT_FORMAT}')
-#                               if self._config.verbosity > 0:
-#                                       print("==========================================================")
-#                                       print("output:")
-#                                       print(f"    output:{self._config.output}")
-#                                       print(f"    format:{OUTPUT_FORMAT}")
-#                                       print(f"    size:{OUTPUT_SIZE}")
-#                                       print(f"    fps:{FPS}")
-#                                       print(f"    fourcc:{fourcc}")
-
-#                               # Create output device
-#                               output = cv2.VideoWriter(self._config.output, fourcc, FPS, OUTPUT_SIZE)
-#                               if output.isOpened():
-#                                       if self._config.verbosity > 0:
-#                                               print(f'Output is opened')
-#                               else:
-#                                       eprint('Cant\'t open open output, supported codecs:')
-#                                       cv2.VideoWriter(self._config.output, -1, FPS, OUTPUT_SIZE)
-#                                       eprint('Cant\'t open open output, exiting')
-#                                       sys.exit(1)
-#               # https://docs.opencv.org/4.x/d4/d15/group__videoio__flags__base.html#ga41c5cfa7859ae542b71b1d33bbd4d2b4
-#               # https://docs.opencv.org/4.x/dc/dfc/group__videoio__flags__others.html
-#               # https://stackoverflow.com/questions/59023363/encoding-hevc-video-using-opencv-and-ffmpeg-backend
-#               # ffmpeg -encoders
-
-
-#                               while True:
-#                                       success, img = cam.read()
-#                                       if not success:
-#                                               eprint('Error reading camera, exiting')
-#                                               sys.exit(1)
-
-#                                       #if mirror: 
-#                                       img = cv2.flip(img, 1)
-
-#                                       cv2.namedWindow('camera', cv2.WINDOW_NORMAL)
-#                                       cv2.resizeWindow('camera', WINDOW_WIDTH, WINDOW_HEIGHT)
-
-#                                       img = self._recordButton.draw(img)
-
-#                                       # assign mouse click to method in button instance
-#                                       #cv2.setMouseCallback("x", self._recordButton.handle_event)
-#                                       #cv2.setMouseCallback("x", Xhandle_event)
-#                                       #https://docs.opencv.org/4.x/db/d5b/tutorial_py_mouse_handling.html
-#                                       
-#                                       cv2.imshow('camera', img)
-
-#                                       # Scale the image to desired size
-#                                       img = cv2.resize(img, OUTPUT_SIZE)
-
-#                                       # Write the image tor the output
-#                                       if self._recordButton._state:
-#                                               output.write(img)
-#                                       
-#                                       key = cv2.waitKey(1)
-#                                       if key == 27: 
-#                                               break  # esc to quit
-#                                       elif key == ord('r'):
-#                                               self._recordButton.toggle()
-
-
-#                               cam.release()
-#                               output.release()
-#                               cv2.destroyAllWindows()
 
 
 
@@ -313,6 +282,9 @@ def main():
         parser.add_argument("--wwidth", type=int, default=-1, help="set window width(default: device width)")
         parser.add_argument("--wheight", type=int, default=-1, help="set window height(default: device height)")
         parser.add_argument("--command", choices=["pause", "record"], default="pause", help="command to recorder(default: pause)")
+        parser.add_argument('--hflip', action='store_true', help='enable horizontal flip')
+        parser.add_argument('--vflip', action='store_true', help='enable vertical flip')
+        parser.add_argument("--name", default="VideoRecorder", help="Assign name to VideoRecorder window(default: VideoRecorder)")
        #parser.add_argument('output', type=str, help='Path to output file')
        #args = parser.parse_args()
         parser.add_argument("output", nargs='*', default=argparse.SUPPRESS)
@@ -340,7 +312,7 @@ def main():
 
         # Create recorder
         recorder = VideoRecorder(config)
-        recorder.show(mirror=True)
+        recorder.show()
 
         #https://docs.opencv.org/3.4/dd/d43/tutorial_py_video_display.html
         #https://www.youtube.com/watch?v=b7ybCOsgf3E
