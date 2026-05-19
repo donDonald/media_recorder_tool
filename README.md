@@ -8,20 +8,24 @@ Set of tools to capture media streams and pack those into container, mp4 or mkv.
 * video/camera capture tool
 
 Supported hosts OSes:
-* Ubuntu 20.04
+* Ubuntu 22.04
 * Ubuntu 24.04
 
 
 
 
 # Setup 
-Assume that ***python*** and ***pip3*** are installed by now. \
-Or install ***python*** manually:
+Install ***FFmpeg***:
 ```
-sudo apt update
- && sudo apt install -y python3
- && python3-pip
- && python3-venv
+sudo apt update \
+ && sudo apt install ffmpeg
+```
+
+Install ***python*** and some tools:
+```
+sudo apt update \
+ && sudo apt install -y python3 python3-pip python3-venv \
+ && sudo apt install -y portaudio19-dev python3-all-dev
 ```
 
 
@@ -29,7 +33,7 @@ sudo apt update
 
 ## 1-st create local python environment
 ```
-python3 -m venv .venv
+python3 -m venv .venv \
  && source .venv/bin/activate
 ```
 Starting now on, assume that any py code is run for that newly created python environment, i.e. ***source .venv/bin/activate*** as called.
@@ -39,9 +43,9 @@ Starting now on, assume that any py code is run for that newly created python en
 
 ## 2-nd install all mandatory python packages
 ```
-pip install opencv-python
-pip install opencv-contrib-python 
-pip install pyaudio
+pip install opencv-python \
+pip install opencv-contrib-python \
+pip install pyaudio \
 pip install ffmpeg-python
 ```
 
@@ -135,7 +139,8 @@ Audio saved as tmp.setups/v0.a1/mic_a.mp3
 
 
 
-To start capturing `v0.a1` setup:
+
+To create media container out of previously captured streams:
 ```
 ./Container.sh setups/v0.a1 create mp4
 ...
